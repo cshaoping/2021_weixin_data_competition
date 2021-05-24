@@ -72,22 +72,37 @@ def concat_sample(sample_arr, stage="offline_train"):
     user_date_feature_path = os.path.join(ROOT_PATH, "feature", "userid_feature.csv")
     user_date_feature = pd.read_csv(user_date_feature_path)
     user_date_feature = user_date_feature.set_index(["userid", "date_"])
+    user_date_feature.rename(columns={"read_commentsum": "read_commentsum_u", "likesum": "likesum_u", "click_avatarsum": "click_avatarsum_u",
+                                      "forwardsum": "forwardsum_u", "commentsum": "commentsum_u", "followsum": "followsum_u",
+                                      "favoritesum": "favoritesum_u"}, inplace=True)
     # 基于feedid统计的历史行为的次数
     feed_date_feature_path = os.path.join(ROOT_PATH, "feature", "feedid_feature.csv")
     feed_date_feature = pd.read_csv(feed_date_feature_path)
     feed_date_feature = feed_date_feature.set_index(["feedid", "date_"])
+    feed_date_feature.rename(columns={"read_commentsum": "read_commentsum_f", "likesum": "likesum_f", "click_avatarsum": "click_avatarsum_f",
+                                      "forwardsum": "forwardsum_f", "commentsum": "commentsum_f", "followsum": "followsum_f",
+                                      "favoritesum": "favoritesum_f"}, inplace=True)
     # 基于userid-feed_cate交叉统计特征
     user_author_feature_path = os.path.join(ROOT_PATH, "feature", "userid_authorid_feature.csv")
     user_author_feature = pd.read_csv(user_author_feature_path)
     user_author_feature = user_author_feature.set_index(["userid", "authorid", "date_"])
+    user_author_feature.rename(columns={"read_commentsum": "read_commentsum_ua", "likesum": "likesum_ua", "click_avatarsum": "click_avatarsum_ua",
+                                        "forwardsum": "forwardsum_ua", "commentsum": "commentsum_ua", "followsum": "followsum_ua",
+                                        "favoritesum": "favoritesum_ua"}, inplace=True)
 
     user_bgm_song_feature_path = os.path.join(ROOT_PATH, "feature", "userid_bgm_song_id_feature.csv")
     user_bgm_song_feature = pd.read_csv(user_bgm_song_feature_path)
     user_bgm_song_feature = user_bgm_song_feature.set_index(["userid", "bgm_song_id", "date_"])
+    user_bgm_song_feature.rename(columns={"read_commentsum": "read_commentsum_usong", "likesum": "likesum_usong", "click_avatarsum": "click_avatarsum_usong",
+                                          "forwardsum": "forwardsum_usong", "commentsum": "commentsum_usong", "followsum": "followsum_usong",
+                                          "favoritesum": "favoritesum_usong"}, inplace=True)
 
     user_bgm_singer_feature_path = os.path.join(ROOT_PATH, "feature", "userid_bgm_singer_id_feature.csv")
     user_bgm_singer_feature = pd.read_csv(user_bgm_singer_feature_path)
     user_bgm_singer_feature = user_bgm_singer_feature.set_index(["userid", "bgm_singer_id", "date_"])
+    user_bgm_singer_feature.rename(columns={"read_commentsum": "read_commentsum_using", "likesum": "likesum_using", "click_avatarsum": "click_avatarsum_using",
+                                            "forwardsum": "forwardsum_using", "commentsum": "commentsum_using", "followsum": "followsum_using",
+                                            "favoritesum": "favoritesum_using"}, inplace=True)
 
     for index, sample in enumerate(sample_arr):
         features = ["userid", "feedid", "device", "authorid", "bgm_song_id", "bgm_singer_id",
@@ -104,14 +119,33 @@ def concat_sample(sample_arr, stage="offline_train"):
         sample = sample.join(feed_info, on="feedid", how="left", rsuffix="_feed")
         sample = sample.join(feed_date_feature, on=["feedid", "date_"], how="left", rsuffix="_feed")
         sample = sample.join(user_date_feature, on=["userid", "date_"], how="left", rsuffix="_user")
-        feed_feature_col = [b+"sum" for b in FEA_COLUMN_LIST]
-        user_feature_col = [b+"sum_user" for b in FEA_COLUMN_LIST]
+        sample = sample.join(user_author_feature, on=["userid", "authorid", "date_"], how="left", rsuffix="_ua")
+        sample = sample.join(user_bgm_song_feature, on=["userid", "bgm_song_id", "date_"], how="left", rsuffix="_usong")
+        sample = sample.join(user_bgm_singer_feature, on=["userid", "bgm_singer_id", "date_"], how="left", rsuffix="_usong")
+
+        feed_feature_col = [b + "sum_f" for b in FEA_COLUMN_LIST]
+        user_feature_col = [b + "sum_u" for b in FEA_COLUMN_LIST]
+        user_author_feature_col = [b + "sum_ua" for b in FEA_COLUMN_LIST]
+        user_bgm_song_feature_col = [b + "sum_usong" for b in FEA_COLUMN_LIST]
+        user_bgm_singer_feature_col = [b + "sum_using" for b in FEA_COLUMN_LIST]
+
         sample[feed_feature_col] = sample[feed_feature_col].fillna(0.0)
         sample[user_feature_col] = sample[user_feature_col].fillna(0.0)
+        sample[user_author_feature_col] = sample[user_author_feature_col].fillna(0.0)
+        sample[user_bgm_song_feature_col] = sample[user_bgm_song_feature_col].fillna(0.0)
+        sample[user_bgm_singer_feature_col] = sample[user_bgm_singer_feature_col].fillna(0.0)
+
         sample[feed_feature_col] = np.log(sample[feed_feature_col] + 1.0)
         sample[user_feature_col] = np.log(sample[user_feature_col] + 1.0)
+        sample[user_author_feature_col] = np.log(sample[user_author_feature_col] + 1.0)
+        sample[user_bgm_song_feature_col] = np.log(sample[user_bgm_song_feature_col] + 1.0)
+        sample[user_bgm_singer_feature_col] = np.log(sample[user_bgm_singer_feature_col] + 1.0)
+
         features += feed_feature_col
         features += user_feature_col
+        features += user_author_feature_col
+        features += user_bgm_song_feature_col
+        features += user_bgm_singer_feature_col
 
         sample[["authorid", "bgm_song_id", "bgm_singer_id"]] += 1  # 0 用于填未知
         sample[["authorid", "bgm_song_id", "bgm_singer_id", "videoplayseconds"]] = \
@@ -121,7 +155,7 @@ def concat_sample(sample_arr, stage="offline_train"):
         sample[["authorid", "bgm_song_id", "bgm_singer_id"]] = \
             sample[["authorid", "bgm_song_id", "bgm_singer_id"]].astype(int)
         file_name = os.path.join(ROOT_PATH, stage, stage + "_" + action + "_" + str(day) + "_concate_sample.csv")
-        print('Save to: %s'%file_name)
+        print('Save to: %s' % file_name)
         sample[features].to_csv(file_name, index=False)
 
 

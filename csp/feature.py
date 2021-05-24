@@ -12,7 +12,7 @@ from const import *
 
 # 生成单维度的统计特征
 def create_statistic_feature(start_day=1, before_day=7, agg="sum"):
-    history_data = pd.read_csv(USER_ACTION, nrows=100)[["userid", "date_", "feedid"] + FEA_COLUMN_LIST]
+    history_data = pd.read_csv(USER_ACTION)[["userid", "date_", "feedid"] + FEA_COLUMN_LIST]
     feature_dir = os.path.join(ROOT_PATH, "feature")
     for dim in ["userid", "feedid"]:
         print(dim)
@@ -34,8 +34,8 @@ def create_statistic_feature(start_day=1, before_day=7, agg="sum"):
 # 生成交叉维度的统计特征
 def create_cross_statistic_feature(start_day=1, before_day=7, agg="sum"):
     feed_cate_list = ["authorid", "bgm_song_id", "bgm_singer_id"]
-    history_data = pd.read_csv(USER_ACTION, nrows=1000)[["userid", "date_", "feedid"] + FEA_COLUMN_LIST]
-    feed_info = pd.read_csv(FEED_INFO, nrows=1000)[["feedid"] + feed_cate_list]
+    history_data = pd.read_csv(USER_ACTION)[["userid", "date_", "feedid"] + FEA_COLUMN_LIST]
+    feed_info = pd.read_csv(FEED_INFO)[["feedid"] + feed_cate_list]
     feature_dir = os.path.join(ROOT_PATH, "feature")
     history_data = pd.merge(history_data, feed_info, how='inner', on='feedid')
     for cate_name in feed_cate_list:
